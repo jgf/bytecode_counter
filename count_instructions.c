@@ -13,12 +13,10 @@
  * @author Juergen Graf <juergen.graf@gmail.com>
  */
 
-#define MAX_METHODS 20000
+#define NEW(type) (type *)h_alloc(sizeof(type))
 
-#define NEW(type) (type *)hAlloc(sizeof(type))
-
-void *
-hAlloc(int size)
+inline void *
+h_alloc(int size)
 {
     void *addr = calloc(1, size);
     if (addr) {
@@ -41,9 +39,6 @@ typedef struct {
 
 typedef struct {
     long       counter;
-    char      *name;
-    char      *sig;
-    char      *class_sig;
     jmethodID  id;
 } _counter_method_data;
 typedef _counter_method_data * counter_method_data;
@@ -52,13 +47,9 @@ static GlobalAgentData    *gdata;
 static jvmtiEnv           *jvmti = NULL;
 static jvmtiCapabilities   capa;
 static unsigned long long  num_instructions_proccessed;
-static map_t               map;
-static jmethodID           methods[MAX_METHODS];
-static long                counter[MAX_METHODS];
-static int                 cur_method_index;
 #ifdef DETAILED_RESULTS
+static map_t               map;
 static jmethodID           last_method;
-static long               *cur_counter;
 static counter_method_data cur_method;
 #endif
 
@@ -115,7 +106,7 @@ describe(jvmtiError err)
       }
  }
 
-
+#ifdef DETAILED_RESULTS
 static void
 jvmti_dealloc(unsigned char * ptr)
 {
@@ -129,44 +120,50 @@ jvmti_dealloc(unsigned char * ptr)
     }
 }
 
+int
+print_method_info(any_t item, any_t value)
+{
+    counter_method_data d = (counter_method_data) value;
+    jmethodID   method_id = d->id;
+    jvmtiError  error;
+    char       *name;
+    char       *sig;
+    char       *ptr;
+    error = (*jvmti)->GetMethodName(jvmti, method_id, &name, &sig, &ptr);
+    check_jvmti_error(jvmti, error, "Cannot get method name");
+
+    jclass      decl_class;
+    error = (*jvmti)->GetMethodDeclaringClass(jvmti, method_id, &decl_class);
+    check_jvmti_error(jvmti, error, "Cannot get declaring class");
+
+    char       *class_sig;
+    char       *class_status;
+    error = (*jvmti)->GetClassSignature(jvmti, decl_class, &class_sig, &class_status);
+    check_jvmti_error(jvmti, error, "Cannot get class signature");
+
+    printf("%ld\tclass %s -> %s(%s)\n", d->counter, class_sig, name, sig);
+
+    jvmti_dealloc((unsigned char *) name);
+    jvmti_dealloc((unsigned char *) sig);
+    jvmti_dealloc((unsigned char *) ptr);
+    jvmti_dealloc((unsigned char *) class_sig);
+    jvmti_dealloc((unsigned char *) class_status);
+
+    return MAP_OK;
+}
+#endif
 // Exception callback
 // VM Death callback
 static void JNICALL
 callbackVMDeath(jvmtiEnv *jvmti_env, JNIEnv* jni_env)
 {
-    int    i;
     (void) jvmti_env;
     (void) jni_env;
 
 #ifdef DETAILED_RESULTS
     enter_critical_section(jvmti);
 
-    for (i = 0; i < cur_method_index; i++) {
-        jmethodID   method_id = methods[i];
-        jvmtiError  error;
-        char       *name;
-        char       *sig;
-        char       *ptr;
-        error = (*jvmti)->GetMethodName(jvmti, method_id, &name, &sig, &ptr);
-        check_jvmti_error(jvmti, error, "Cannot get method name");
-
-        jclass      decl_class;
-        error = (*jvmti)->GetMethodDeclaringClass(jvmti, method_id, &decl_class);
-        check_jvmti_error(jvmti, error, "Cannot get declaring class");
-
-        char       *class_sig;
-        char       *class_status;
-        error = (*jvmti)->GetClassSignature(jvmti, decl_class, &class_sig, &class_status);
-        check_jvmti_error(jvmti, error, "Cannot get class signature");
-
-        printf("%ld\tclass %s -> %s(%s)\n", counter[i], class_sig, name, sig);
-
-        jvmti_dealloc((unsigned char *) name);
-        jvmti_dealloc((unsigned char *) sig);
-        jvmti_dealloc((unsigned char *) ptr);
-        jvmti_dealloc((unsigned char *) class_sig);
-        jvmti_dealloc((unsigned char *) class_status);
-    }
+    hashmap_iterate(map, &print_method_info, NULL);
 
     exit_critical_section(jvmti);
 #endif
@@ -194,18 +191,13 @@ callbackSingleStep(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethod
     if (last_method != method) {
         last_method = method;
 
-        if (hashmap_get(map, (unsigned long) method, (void *) &cur_counter) == MAP_MISSING) {
-            if (cur_method_index >= MAX_METHODS) {
-                printf("error: more then %i methods are not supported. apply quick fix: reset counter to 0.\n",
-                    MAX_METHODS);
-                cur_method_index = 0;
-            }
-            methods[cur_method_index] = method;
-            cur_counter = &counter[cur_method_index++];
-            hashmap_put(map, (unsigned long) method, cur_counter);
+        if (hashmap_get(map, (MAP_KEY_TYPE) method, (void *) &cur_method) == MAP_MISSING) {
+            cur_method = NEW(_counter_method_data);
+            cur_method->id = method;
+            hashmap_put(map, (MAP_KEY_TYPE) method, cur_method);
         }
     }
-    (*cur_counter)++;
+    cur_method->counter++;
 #endif
 
     num_instructions_proccessed++;
@@ -222,10 +214,10 @@ Agent_OnLoad(JavaVM *jvm, char *options, void *reserved)
     (void)                 reserved;
 
     num_instructions_proccessed = 0;
-    cur_method_index            = 0;
+#ifdef DETAILED_RESULTS
     map                         = hashmap_new();
-    (void)memset(&methods, 0, sizeof(methods));
-    (void)memset(&counter, 0, sizeof(counter));
+    last_method                 = NULL;
+#endif
 
     /* Setup initial global agent data area
      * Use of static/extern data should be handled carefully here.
@@ -299,9 +291,9 @@ Agent_OnUnload(JavaVM *vm)
     (void) vm;
 
     /* Make sure all malloc/calloc/strdup space is freed */
-    hashmap_free(map);
 #ifdef DETAILED_RESULTS
-    printf("%llu bytecode instructions in %d methods executed.\n", num_instructions_proccessed, cur_method_index - 1);
+    hashmap_free(map);
+    printf("%llu bytecode instructions executed.\n", num_instructions_proccessed);
 #else
     fprintf(stderr, "%llu\n", num_instructions_proccessed);
 #endif
