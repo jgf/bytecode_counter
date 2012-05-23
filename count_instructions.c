@@ -292,8 +292,8 @@ Agent_OnUnload(JavaVM *vm)
 
     /* Make sure all malloc/calloc/strdup space is freed */
 #ifdef DETAILED_RESULTS
+    printf("%llu bytecode instructions in %i methods executed.\n", num_instructions_proccessed, hashmap_length(map));
     hashmap_free(map);
-    printf("%llu bytecode instructions executed.\n", num_instructions_proccessed);
 #else
     fprintf(stderr, "%llu\n", num_instructions_proccessed);
 #endif
