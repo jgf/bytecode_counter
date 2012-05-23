@@ -15,7 +15,7 @@
 
 /* We need to keep keys and values */
 typedef struct _hashmap_element {
-    MAP_KEY_TYPE key;
+    map_key_t key;
     int          in_use;
     any_t        data;
 } hashmap_element;
@@ -55,7 +55,7 @@ hashmap_new()
  * Hashing function for a string
  */
 inline unsigned int 
-hashmap_hash_int(hashmap_map * m, MAP_KEY_TYPE key)
+hashmap_hash_int(hashmap_map * m, map_key_t key)
 {
     return key % m->table_size;
 }
@@ -65,7 +65,7 @@ hashmap_hash_int(hashmap_map * m, MAP_KEY_TYPE key)
  * to store the point to the item, or MAP_FULL.
  */
 int
-hashmap_hash(map_t in, MAP_KEY_TYPE key)
+hashmap_hash(map_t in, map_key_t key)
 {
     int curr;
     int i;
@@ -140,7 +140,7 @@ hashmap_rehash(map_t in)
  * Add a pointer to the hashmap with some key
  */
 int
-hashmap_put(map_t in, MAP_KEY_TYPE key, any_t value)
+hashmap_put(map_t in, map_key_t key, any_t value)
 {
     int index;
     hashmap_map* m;
@@ -170,7 +170,7 @@ hashmap_put(map_t in, MAP_KEY_TYPE key, any_t value)
  * Get your pointer out of the hashmap with a key
  */
 int
-hashmap_get(map_t in, MAP_KEY_TYPE key, any_t *arg)
+hashmap_get(map_t in, map_key_t key, any_t *arg)
 {
     int curr;
     int i;
@@ -236,7 +236,7 @@ hashmap_iterate(map_t in, PFany f, any_t item)
  * Remove an element with that key from the map
  */
 int
-hashmap_remove(map_t in, MAP_KEY_TYPE key)
+hashmap_remove(map_t in, map_key_t key)
 {
     int          i;
     int          curr;

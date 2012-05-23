@@ -16,7 +16,7 @@
 #define MAP_OMEM -1     /* Out of Memory */
 #define MAP_OK 0        /* OK */
 
-#define MAP_KEY_TYPE unsigned long
+typedef unsigned long map_key_t;
 
 /*
  * any_t is a pointer.  This allows you to put arbitrary structures in
@@ -54,17 +54,17 @@ extern int hashmap_iterate(map_t in, PFany f, any_t item);
 /*
  * Add an element to the hashmap. Return MAP_OK or MAP_OMEM.
  */
-extern int hashmap_put(map_t in, MAP_KEY_TYPE key, any_t value);
+extern int hashmap_put(map_t in, map_key_t key, any_t value);
 
 /*
  * Get an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_get(map_t in, MAP_KEY_TYPE key, any_t *arg);
+extern int hashmap_get(map_t in, map_key_t key, any_t *arg);
 
 /*
  * Remove an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_remove(map_t in, MAP_KEY_TYPE key);
+extern int hashmap_remove(map_t in, map_key_t key);
 
 /*
  * Get any element. Return MAP_OK or MAP_MISSING.
