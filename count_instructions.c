@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include "hashmap.h"
 
 #define DETAILED_RESULTS
@@ -35,21 +34,21 @@ typedef struct {
     jboolean       vm_is_started;
     /* Data access Lock */
     jrawMonitorID  lock;
-} GlobalAgentData;
+} global_agent_data_t;
 
 typedef struct _method_stat_t {
     unsigned long counter;
     jmethodID     id;
 } method_stat_t;
 
-static GlobalAgentData    *gdata;
-static jvmtiEnv           *jvmti = NULL;
-static jvmtiCapabilities   capa;
-static unsigned long long  num_instructions_proccessed;
+static global_agent_data_t *gdata;
+static jvmtiEnv            *jvmti = NULL;
+static jvmtiCapabilities    capa;
+static unsigned long long   num_instructions_proccessed;
 #ifdef DETAILED_RESULTS
-static map_t              *map;
-static jmethodID           last_jmethod;
-static method_stat_t      *cur_method_stat = NULL;
+static map_t               *map;
+static jmethodID            last_jmethod;
+static method_stat_t       *cur_method_stat = NULL;
 #endif
 
 /* Every JVMTI interface returns an error code, which should be checked
@@ -195,7 +194,6 @@ callbackSingleStep(jvmtiEnv * const jvmti_env, JNIEnv * const jni_env, const jth
             hashmap_put(map, (map_key_t) method, cur_method_stat);
         }
     }
-    assert(cur_method_stat != NULL);
     cur_method_stat->counter++;
 
     num_instructions_proccessed++;
@@ -209,11 +207,11 @@ callbackSingleStep(jvmtiEnv * const jvmti_env, JNIEnv * const jni_env, const jth
 JNIEXPORT jint JNICALL
 Agent_OnLoad(JavaVM * const jvm, char * const options, void * const reserved)
 {
-    static GlobalAgentData data;
-    jvmtiError             error;
-    jvmtiEventCallbacks    callbacks;
-    (void)                 options;
-    (void)                 reserved;
+    (void)                     options;
+    (void)                     reserved;
+    static global_agent_data_t data;
+    jvmtiError                 error;
+    jvmtiEventCallbacks        callbacks;
 
     num_instructions_proccessed = 0;
 #ifdef DETAILED_RESULTS

@@ -70,4 +70,4 @@ extern void hashmap_free(map_t * const in);
  */
 extern int hashmap_length(const map_t * const in);
 
-#endif __HASHMAP_H__
+#endif /* __HASHMAP_H__ */
