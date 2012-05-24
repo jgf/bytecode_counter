@@ -32,7 +32,7 @@ typedef struct _hashmap_map{
  * Return an empty hashmap, or NULL on failure.
  */
 map_t
-hashmap_new()
+hashmap_new(void)
 {
     hashmap_map* m = M_NEW(hashmap_map);
     if (m) {
@@ -54,7 +54,7 @@ hashmap_new()
 /*
  * Hashing function for a string
  */
-inline unsigned int 
+static inline unsigned int 
 hashmap_hash_int(hashmap_map * m, map_key_t key)
 {
     return key % m->table_size;
@@ -64,7 +64,7 @@ hashmap_hash_int(hashmap_map * m, map_key_t key)
  * Return the integer of the location in data
  * to store the point to the item, or MAP_FULL.
  */
-int
+static int
 hashmap_hash(map_t in, map_key_t key)
 {
     int curr;
@@ -97,7 +97,7 @@ hashmap_hash(map_t in, map_key_t key)
 /*
  * Doubles the size of the hashmap, and rehashes all the elements
  */
-int
+static int
 hashmap_rehash(map_t in)
 {
     int              i;
