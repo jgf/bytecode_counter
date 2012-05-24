@@ -16,7 +16,7 @@ else
 	CFLAGS_JNILIB=-fPIC -shared
 endif
 TARGET=${BCCOUNT_DIR}/${TARGET_LIB}
-CFLAGS_OBJ=-I${BCCOUNT_DIR} -I${JAVA_HEADERS} -fPIC -Wall -g -c
+CFLAGS_OBJ=-I${BCCOUNT_DIR} -I${JAVA_HEADERS} -O0 -fPIC -Wall -g3 -c
 OBJ=${BCCOUNT_DIR}/hashmap.o ${BCCOUNT_DIR}/count_instructions.o
 HDR=${BCCOUNT_DIR}/hashmap.h
 SRC=$(OBJ:%.o=%.c)

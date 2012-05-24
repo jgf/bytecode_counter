@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "hashmap.h"
 
 #define DETAILED_RESULTS
@@ -187,8 +188,9 @@ callbackSingleStep(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethod
     (void) location;
     (void) method;
 
+    enter_critical_section(jvmti);
 #ifdef DETAILED_RESULTS
-    if (cur_method == NULL || last_method != method) {
+    if (last_method != method) {
         last_method = method;
 
         if (hashmap_get(map, (map_key_t) method, (void *) &cur_method) == MAP_MISSING) {
@@ -197,10 +199,12 @@ callbackSingleStep(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethod
             hashmap_put(map, (map_key_t) method, cur_method);
         }
     }
+    assert(cur_method != NULL);
     cur_method->counter++;
 #endif
 
     num_instructions_proccessed++;
+    exit_critical_section(jvmti);
 }
 
 JNIEXPORT jint JNICALL
