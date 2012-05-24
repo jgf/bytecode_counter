@@ -19,67 +19,55 @@
 typedef unsigned long map_key_t;
 
 /*
- * any_t is a pointer.  This allows you to put arbitrary structures in
- * the hashmap.
- */
-typedef void *any_t;
-
-/*
- * PFany is a pointer to a function that can take two any_t arguments
+ * map_visit_func is a pointer to a function that can take two (void *) arguments
  * and return an integer. Returns status code..
  */
-typedef int (*PFany)(any_t, any_t);
+typedef int (*map_visit_func_p)(void *, void *);
 
 /*
- * map_t is a pointer to an internally maintained data structure.
+ * map_s is an internally maintained data structure.
  * Clients of this package do not need to know how hashmaps are
- * represented.  They see and manipulate only map_t's.
+ * represented. They see and manipulate only map_t's.
  */
-typedef any_t map_t;
+typedef struct map_s map_t;
 
 /*
  * Return an empty hashmap. Returns NULL if empty.
-*/
-extern map_t hashmap_new(void);
+ */
+extern map_t * hashmap_new(void);
 
 /*
- * Iteratively call f with argument (item, data) for
- * each element data in the hashmap. The function must
+ * Iteratively call f with argument (value, f_arg) for
+ * each element 'value' in the hashmap. The function must
  * return a map status code. If it returns anything other
  * than MAP_OK the traversal is terminated. f must
  * not reenter any hashmap functions, or deadlock may arise.
  */
-extern int hashmap_iterate(map_t in, PFany f, any_t item);
+extern int hashmap_iterate(const map_t * const in, map_visit_func_p f, void *f_arg);
 
 /*
  * Add an element to the hashmap. Return MAP_OK or MAP_OMEM.
  */
-extern int hashmap_put(map_t in, map_key_t key, any_t value);
+extern int hashmap_put(map_t * const in, const map_key_t key, void * const value);
 
 /*
  * Get an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_get(map_t in, map_key_t key, any_t *arg);
+extern int hashmap_get(const map_t * const in, const map_key_t key, void **value);
 
 /*
  * Remove an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_remove(map_t in, map_key_t key);
-
-/*
- * Get any element. Return MAP_OK or MAP_MISSING.
- * remove - should the element be removed from the hashmap
- */
-extern int hashmap_get_one(map_t in, any_t *arg, int remove);
+extern int hashmap_remove(map_t * const in, const map_key_t key);
 
 /*
  * Free the hashmap
  */
-extern void hashmap_free(map_t in);
+extern void hashmap_free(map_t * const in);
 
 /*
  * Get the current size of a hashmap
  */
-extern int hashmap_length(map_t in);
+extern int hashmap_length(const map_t * const in);
 
 #endif __HASHMAP_H__

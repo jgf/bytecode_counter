@@ -5,7 +5,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #define INITIAL_SIZE (256)
 #define MAX_CHAIN_LENGTH (8)
@@ -14,29 +13,29 @@
 #define C_NEW(count, type) (type *) calloc(count, sizeof(type))
 
 /* We need to keep keys and values */
-typedef struct _hashmap_element {
-    map_key_t key;
-    int          in_use;
-    any_t        data;
-} hashmap_element;
+typedef struct _map_elem_s {
+    map_key_t  key;
+    int        in_use;
+    void      *data;
+} map_elem_t;
 
 /* A hashmap has some maximum size and current size,
  * as well as the data to hold. */
-typedef struct _hashmap_map{
-    int              table_size;
-    int              size;
-    hashmap_element *data;
-} hashmap_map;
+typedef struct map_s {
+    int         table_size;
+    int         size;
+    map_elem_t *data;
+} map_s;
 
 /*
  * Return an empty hashmap, or NULL on failure.
  */
-map_t
+map_t *
 hashmap_new(void)
 {
-    hashmap_map* m = M_NEW(hashmap_map);
+    map_t* m = M_NEW(map_t);
     if (m) {
-        m->data = C_NEW(INITIAL_SIZE, hashmap_element);
+        m->data = C_NEW(INITIAL_SIZE, map_elem_t);
         if (m->data) {
             m->table_size = INITIAL_SIZE;
             m->size = 0;
@@ -55,7 +54,7 @@ hashmap_new(void)
  * Hashing function for a string
  */
 static inline unsigned int 
-hashmap_hash_int(hashmap_map * m, map_key_t key)
+hashmap_hash_int(const map_t * const m, const map_key_t key)
 {
     return key % m->table_size;
 }
@@ -65,16 +64,13 @@ hashmap_hash_int(hashmap_map * m, map_key_t key)
  * to store the point to the item, or MAP_FULL.
  */
 static int
-hashmap_hash(map_t in, map_key_t key)
+hashmap_hash(const map_t * const m, const map_key_t key)
 {
     int curr;
     int i;
 
-    /* Cast the hashmap */
-    hashmap_map* m = (hashmap_map *) in;
-
     /* If full, return immediately */
-    if (m->size >= (m->table_size/2))
+    if (m->size >= (m->table_size / 2))
         return MAP_FULL;
 
     /* Find the best index */
@@ -98,15 +94,15 @@ hashmap_hash(map_t in, map_key_t key)
  * Doubles the size of the hashmap, and rehashes all the elements
  */
 static int
-hashmap_rehash(map_t in)
+hashmap_rehash(map_t * const m)
 {
-    int              i;
-    int              old_size;
-    hashmap_element *curr;
+    int         i;
+    int         old_size;
+    map_elem_t *curr;
 
     /* Setup the new elements */
-    hashmap_map *m = (hashmap_map *) in;
-    hashmap_element* temp = C_NEW(2 * m->table_size, hashmap_element);
+    int         new_size = 2 * m->table_size;
+    map_elem_t *temp     = C_NEW(new_size, map_elem_t);
     if (!temp)
         return MAP_OMEM;
 
@@ -116,7 +112,7 @@ hashmap_rehash(map_t in)
 
     /* Update the size */
     old_size = m->table_size;
-    m->table_size = 2 * m->table_size;
+    m->table_size = new_size;
     m->size = 0;
 
     /* Rehash the elements */
@@ -140,13 +136,13 @@ hashmap_rehash(map_t in)
  * Add a pointer to the hashmap with some key
  */
 int
-hashmap_put(map_t in, map_key_t key, any_t value)
+hashmap_put(map_t * const in, const map_key_t key, void * const value)
 {
     int index;
-    hashmap_map* m;
+    map_t* m;
 
     /* Cast the hashmap */
-    m = (hashmap_map *) in;
+    m = (map_t *) in;
 
     /* Find a place to put our value */
     index = hashmap_hash(in, key);
@@ -170,14 +166,10 @@ hashmap_put(map_t in, map_key_t key, any_t value)
  * Get your pointer out of the hashmap with a key
  */
 int
-hashmap_get(map_t in, map_key_t key, any_t *arg)
+hashmap_get(const map_t * const m, const map_key_t key, void **arg)
 {
     int curr;
     int i;
-    hashmap_map* m;
-
-    /* Cast the hashmap */
-    m = (hashmap_map *) in;
 
     /* Find data location */
     curr = hashmap_hash_int(m, key);
@@ -203,16 +195,13 @@ hashmap_get(map_t in, map_key_t key, any_t *arg)
 
 /*
  * Iterate the function parameter over each element in the hashmap.  The
- * additional any_t argument is passed to the function as its first
- * argument and the hashmap element is the second.
+ * additional (void *) argument is passed to the function as its second
+ * argument and the hashmap element is the first.
  */
 int
-hashmap_iterate(map_t in, PFany f, any_t item)
+hashmap_iterate(const map_t * const m, map_visit_func_p f, void *f_arg)
 {
     int i;
-
-    /* Cast the hashmap */
-    hashmap_map* m = (hashmap_map*) in;
 
     /* On empty hashmap, return immediately */
     if (hashmap_length(m) <= 0)
@@ -221,8 +210,8 @@ hashmap_iterate(map_t in, PFany f, any_t item)
     /* Linear probing */
     for (i = 0; i < m->table_size; i++) {
         if (m->data[i].in_use != 0) {
-            any_t data = (any_t) (m->data[i].data);
-            int status = f(item, data);
+            void *data = m->data[i].data;
+            int status = f(data, f_arg);
             if (status != MAP_OK) {
                 return status;
             }
@@ -236,14 +225,10 @@ hashmap_iterate(map_t in, PFany f, any_t item)
  * Remove an element with that key from the map
  */
 int
-hashmap_remove(map_t in, map_key_t key)
+hashmap_remove(map_t * const m, const map_key_t key)
 {
     int          i;
     int          curr;
-    hashmap_map *m;
-
-    /* Cast the hashmap */
-    m = (hashmap_map *) in;
 
     /* Find key */
     curr = hashmap_hash_int(m, key);
@@ -272,18 +257,16 @@ hashmap_remove(map_t in, map_key_t key)
 
 /* Deallocate the hashmap */
 void
-hashmap_free(map_t in)
+hashmap_free(map_t * const m)
 {
-    hashmap_map* m = (hashmap_map*) in;
     free(m->data);
     free(m);
 }
 
 /* Return the length of the hashmap */
 int
-hashmap_length(map_t in)
+hashmap_length(const map_t * const m)
 {
-    hashmap_map* m = (hashmap_map *) in;
     if (m != NULL)
         return m->size;
     else
