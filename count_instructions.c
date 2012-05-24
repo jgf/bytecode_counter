@@ -14,8 +14,6 @@
  */
 
 #define NEW(type) (type *)h_alloc(sizeof(type))
-#define NULL_PTR(ptr_type) ((ptr_type*)0)
-#define NULL_DATA(type) ((type)0)
 
 inline void *
 h_alloc(int size)
@@ -46,7 +44,7 @@ typedef struct {
 typedef _counter_method_data * counter_method_data;
 
 static GlobalAgentData    *gdata;
-static jvmtiEnv           *jvmti = NULL_PTR(jvmtiEnv);
+static jvmtiEnv           *jvmti = NULL;
 static jvmtiCapabilities   capa;
 static unsigned long long  num_instructions_proccessed;
 #ifdef DETAILED_RESULTS
@@ -67,11 +65,11 @@ check_jvmti_error(jvmtiEnv *jvmti, jvmtiError errnum, const char *str)
     if (errnum == JVMTI_ERROR_NONE)
         return;
 
-    errnum_str = NULL_PTR(char);
+    errnum_str = NULL;
     (void)(*jvmti)->GetErrorName(jvmti, errnum, &errnum_str);
 
-    printf("ERROR: JVMTI: %d(%s): %s\n", errnum, (errnum_str == NULL_PTR(char) ? "Unknown" : errnum_str),
-        (str == NULL_PTR(char) ? "" : str));
+    printf("ERROR: JVMTI: %d(%s): %s\n", errnum, (errnum_str == NULL ? "Unknown" : errnum_str),
+        (str == NULL ? "" : str));
 }
 
 /* Enter a critical section by doing a JVMTI Raw Monitor Enter */
@@ -165,7 +163,7 @@ callbackVMDeath(jvmtiEnv *jvmti_env, JNIEnv* jni_env)
 #ifdef DETAILED_RESULTS
     enter_critical_section(jvmti);
 
-    hashmap_iterate(map, &print_method_info, NULL_DATA(any_t));
+    hashmap_iterate(map, &print_method_info, NULL);
 
     exit_critical_section(jvmti);
 #endif
@@ -190,7 +188,7 @@ callbackSingleStep(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethod
     (void) method;
 
 #ifdef DETAILED_RESULTS
-    if (cur_method == NULL_DATA(counter_method_data) || last_method != method) {
+    if (cur_method == NULL || last_method != method) {
         last_method = method;
 
         if (hashmap_get(map, (map_key_t) method, (void *) &cur_method) == MAP_MISSING) {
@@ -215,10 +213,10 @@ Agent_OnLoad(JavaVM *jvm, char *options, void *reserved)
     (void)                 options;
     (void)                 reserved;
 
-    num_instructions_proccessed = NULL_DATA(unsigned long long);
+    num_instructions_proccessed = 0;
 #ifdef DETAILED_RESULTS
     map                         = hashmap_new();
-    last_method                 = NULL_DATA(jmethodID);
+    last_method                 = NULL;
 #endif
 
     /* Setup initial global agent data area
