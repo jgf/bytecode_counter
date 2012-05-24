@@ -1,4 +1,24 @@
-Adjust to your environment:
+ATTENTION: Eventually adjust Makefile to your environment. It may work for OSX
+and ubuntu linux without adjustments.
 
-	* make_lib.sh
-	* run.sh
+This project contains a jvm agent library that can be used to count the number
+of java bytecode instructions that are executed during a certain program run.
+It displays the results on a per method basis. This has been used to check
+the impact of compiletime optimizations to the bytecode in the context of a
+compiler course at the Karlstuhe Institute of Technology.
+
+Be aware that running a jvm with this agent library attached results in a
+heavy slowdown, due to massive callbacks and a disabled jit compiler.
+
+- make
+    Builds jvm agent library for the instruction counter 'libcounter.jnilib'.
+- make test
+    Build classes needed for a testrun.
+- make run-test
+    Runs the testcase java program and counts the executed instructions.
+- make clean
+    Cleans up intermediate compilation results.
+- make clean-all
+    Cleans up all generated files.
+
+This program is written by Juergen Graf <juergen.graf@gmail.com>.
