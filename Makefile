@@ -34,7 +34,7 @@ run-test: test
 ${TARGET}: ${OBJ}
 	${CC} ${CFLAGS_JNILIB} -o $@ $^
 
-%.o: %.c
+%.o: %.c *.h
 	${CC} ${CFLAGS_OBJ} -o $@ $<
 
 %.class: %.java
