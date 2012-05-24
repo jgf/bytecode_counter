@@ -11,7 +11,7 @@ Be aware that running a jvm with this agent library attached results in a
 heavy slowdown, due to massive callbacks and a disabled jit compiler.
 
 - make
-    Builds jvm agent library for the instruction counter 'libcounter.jnilib'.
+    Builds jvm agent library for the instruction counter 'libcounter.(jnilib|so)'.
 - make test
     Build classes needed for a testrun.
 - make run-test
