@@ -12,7 +12,7 @@
 #define C_NEW(count, type) (type *) calloc(count, sizeof(type))
 
 /* We need to keep keys and values */
-typedef struct _map_elem_s {
+typedef struct {
     map_key_t  key;
     int        in_use;
     void      *data;
@@ -20,11 +20,11 @@ typedef struct _map_elem_s {
 
 /* A hashmap has some maximum size and current size,
  * as well as the data to hold. */
-typedef struct map_s {
+struct map_s {
     int         table_size;
     int         size;
     map_elem_t *data;
-} map_s;
+};
 
 /*
  * Return an empty hashmap, or NULL on failure.
@@ -33,7 +33,7 @@ map_t *
 hashmap_new(void)
 {
     map_t* m = M_NEW(map_t);
-    if (m) {
+    if (m != NULL) {
         m->data = C_NEW(INITIAL_SIZE, map_elem_t);
         if (m->data) {
             m->table_size = INITIAL_SIZE;
@@ -42,8 +42,6 @@ hashmap_new(void)
             hashmap_free(m);
             return NULL;
         }
-    } else {
-        return NULL;
     }
 
     return m;
@@ -101,13 +99,13 @@ hashmap_rehash(map_t * const m)
 
     /* Setup the new elements */
     int         new_size = 2 * m->table_size;
-    map_elem_t *temp     = C_NEW(new_size, map_elem_t);
-    if (!temp)
+    map_elem_t *new_elem = C_NEW(new_size, map_elem_t);
+    if (new_elem == NULL)
         return MAP_OMEM;
 
     /* Update the array */
     curr = m->data;
-    m->data = temp;
+    m->data = new_elem;
 
     /* Update the size */
     old_size = m->table_size;

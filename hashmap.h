@@ -43,31 +43,31 @@ extern map_t * hashmap_new(void);
  * than MAP_OK the traversal is terminated. f must
  * not reenter any hashmap functions, or deadlock may arise.
  */
-extern int hashmap_iterate(const map_t * const in, map_visit_func_p f, void *f_arg);
+extern int hashmap_iterate(const map_t *in, map_visit_func_p f, void *f_arg);
 
 /*
  * Add an element to the hashmap. Return MAP_OK or MAP_OMEM.
  */
-extern int hashmap_put(map_t * const in, const map_key_t key, void * const value);
+extern int hashmap_put(map_t *in, const map_key_t key, void *value);
 
 /*
  * Get an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_get(const map_t * const in, const map_key_t key, void **value);
+extern int hashmap_get(const map_t *in, const map_key_t key, void **value);
 
 /*
  * Remove an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_remove(map_t * const in, const map_key_t key);
+extern int hashmap_remove(map_t *in, const map_key_t key);
 
 /*
  * Free the hashmap
  */
-extern void hashmap_free(map_t * const in);
+extern void hashmap_free(map_t *in);
 
 /*
  * Get the current size of a hashmap
  */
-extern int hashmap_length(const map_t * const in);
+extern int hashmap_length(const map_t *in);
 
 #endif /* __HASHMAP_H__ */
