@@ -36,7 +36,7 @@ typedef struct {
     jrawMonitorID  lock;
 } global_agent_data_t;
 
-typedef struct _method_stat_t {
+typedef struct {
     unsigned long counter;
     jmethodID     id;
 } method_stat_t;
@@ -191,7 +191,7 @@ callbackSingleStep(jvmtiEnv * const jvmti_env, JNIEnv * const jni_env, const jth
         if (hashmap_get(map, (map_key_t) method, (void *) &cur_method_stat) == MAP_MISSING) {
             cur_method_stat = NEW(method_stat_t);
             cur_method_stat->id = method;
-            hashmap_put(map, (map_key_t) method, cur_method_stat);
+            (void)hashmap_put(map, (map_key_t) method, cur_method_stat);
         }
     }
     cur_method_stat->counter++;
