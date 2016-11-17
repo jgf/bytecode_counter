@@ -15,7 +15,7 @@
 
 #define NEW(type) (type *)h_alloc(sizeof(type))
 
-inline void *
+static inline void *
 h_alloc(const int size)
 {
     void *addr = calloc(1, size);
